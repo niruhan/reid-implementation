@@ -5,14 +5,14 @@ from torchvision import models
 
 # Define the ResNet50-based Model
 class ft_net(nn.Module):
-    def __init__(self, class_num=751):
+    def __init__(self, class_num=751, droprate=0.5):
         super(ft_net, self).__init__()
         # load the model
         model_ft = models.resnet50(pretrained=True)
         # change avg pooling to global pooling
         model_ft.avgpool = nn.AdaptiveAvgPool2d((1, 1))
         self.model = model_ft
-        self.classifier = ClassBlock(2048, class_num)  # define our classifier.
+        self.classifier = ClassBlock(2048, class_num, droprate)  # define our classifier.
 
     def forward(self, x):
         x = self.model.conv1(x)

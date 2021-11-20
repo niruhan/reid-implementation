@@ -54,6 +54,16 @@ class_names = image_datasets['train'].classes
 model = ft_net(len(class_names))
 criterion = nn.CrossEntropyLoss()
 
+lr = 0.05
+optim_name = optim.SGD
+ignored_params = list(map(id, model.classifier.parameters() ))
+base_params = filter(lambda p: id(p) not in ignored_params, model.parameters())
+classifier_params = model.classifier.parameters()
+optimizer = optim_name([
+         {'params': base_params, 'lr': 0.1 * lr},
+         {'params': classifier_params, 'lr': lr}
+     ], weight_decay=5e-4, momentum=0.9, nesterov=True)
+
 for epoch in range(num_epochs):
     print('Epoch {}/{}'.format(epoch, num_epochs - 1))
     print('-' * 10)
