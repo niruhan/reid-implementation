@@ -1,6 +1,7 @@
 import torch
 import torch.nn as nn
 from torchvision import models
+from torchinfo import summary
 
 
 # Define the ResNet50-based Model
@@ -65,3 +66,7 @@ class ClassBlock(nn.Module):
         else:
             x = self.classifier(x)
             return x
+
+a = ft_net(751)
+
+print(summary(a, input_size=(2, 3, 256, 128)))
