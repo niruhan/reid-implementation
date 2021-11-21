@@ -28,6 +28,4 @@ class ft_net(nn.Module):
         x = self.classifier(x)  # use our classifier.
         return x
 
-a = ft_net(751)
-
-print(summary(a, input_size=(2, 3, 256, 128)))
+print(summary(ft_net(), input_size=(2, 3, 256, 128)))
