@@ -8,6 +8,7 @@ import torch.optim as optim
 from torchvision import datasets, transforms
 from torch.autograd import Variable
 from simple_model import ft_net
+import matplotlib.pyplot as plt
 
 h, w = 256, 128
 data_dir = '/home/niruhan/Personal/paper/Market-1501-v15.09.15/pytorch'
@@ -49,13 +50,20 @@ criterion = nn.CrossEntropyLoss()
 
 lr = 0.05
 optim_name = optim.SGD
-ignored_params = list(map(id, model.classifier.parameters() ))
+ignored_params = list(map(id, model.classifier.parameters()))
 base_params = filter(lambda p: id(p) not in ignored_params, model.parameters())
 classifier_params = model.classifier.parameters()
 optimizer = optim_name([
-         {'params': base_params, 'lr': 0.1 * lr},
-         {'params': classifier_params, 'lr': lr}
-     ], weight_decay=5e-4, momentum=0.9, nesterov=True)
+    {'params': base_params, 'lr': 0.1 * lr},
+    {'params': classifier_params, 'lr': lr}
+], weight_decay=5e-4, momentum=0.9, nesterov=True)
+
+y_loss = {} # loss history
+y_loss['train'] = []
+y_loss['val'] = []
+y_err = {}
+y_err['train'] = []
+y_err['val'] = []
 
 for epoch in range(num_epochs):
     print('Epoch {}/{}'.format(epoch, num_epochs - 1))
@@ -95,3 +103,20 @@ for epoch in range(num_epochs):
             if phase == 'train':
                 loss.backward()
                 optimizer.step()
+
+x_epoch = []
+fig = plt.figure()
+ax0 = fig.add_subplot(121, title="loss")
+ax1 = fig.add_subplot(122, title="top1err")
+
+
+def draw_curve(current_epoch):
+    x_epoch.append(current_epoch)
+    ax0.plot(x_epoch, y_loss['train'], 'bo-', label='train')
+    ax0.plot(x_epoch, y_loss['val'], 'ro-', label='val')
+    ax1.plot(x_epoch, y_err['train'], 'bo-', label='train')
+    ax1.plot(x_epoch, y_err['val'], 'ro-', label='val')
+    if current_epoch == 0:
+        ax0.legend()
+        ax1.legend()
+    fig.savefig(os.path.join('./model', 'ResNet50', 'train.jpg'))
