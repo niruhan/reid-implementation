@@ -44,6 +44,7 @@ dataloaders = {x: torch.utils.data.DataLoader(image_datasets[x], batch_size=batc
                for x in ['train', 'val']}
 
 class_names = image_datasets['train'].classes
+dataset_sizes = {x: len(image_datasets[x]) for x in ['train', 'val']}
 
 model = ft_net(len(class_names))
 criterion = nn.CrossEntropyLoss()
@@ -65,6 +66,23 @@ y_err = {}
 y_err['train'] = []
 y_err['val'] = []
 
+x_epoch = []
+fig = plt.figure()
+ax0 = fig.add_subplot(121, title="loss")
+ax1 = fig.add_subplot(122, title="top1err")
+
+
+def draw_curve(current_epoch):
+    x_epoch.append(current_epoch)
+    ax0.plot(x_epoch, y_loss['train'], 'bo-', label='train')
+    ax0.plot(x_epoch, y_loss['val'], 'ro-', label='val')
+    ax1.plot(x_epoch, y_err['train'], 'bo-', label='train')
+    ax1.plot(x_epoch, y_err['val'], 'ro-', label='val')
+    if current_epoch == 0:
+        ax0.legend()
+        ax1.legend()
+    fig.savefig(os.path.join('./model', 'ResNet50', 'train.jpg'))
+
 for epoch in range(num_epochs):
     print('Epoch {}/{}'.format(epoch, num_epochs - 1))
     print('-' * 10)
@@ -74,6 +92,9 @@ for epoch in range(num_epochs):
             model.train(True)  # Set model to training mode
         else:
             model.train(False)  # Set model to evaluate mode
+
+        running_loss = 0.0
+        running_corrects = 0.0
 
         # Iterate over data.
         for data in dataloaders[phase]:
@@ -98,25 +119,31 @@ for epoch in range(num_epochs):
             _, preds = torch.max(outputs.data, 1)
             loss = criterion(outputs, labels)
 
+            del inputs
+
             # -------- backward + optimize --------
             # only if in training phase
             if phase == 'train':
                 loss.backward()
                 optimizer.step()
 
-x_epoch = []
-fig = plt.figure()
-ax0 = fig.add_subplot(121, title="loss")
-ax1 = fig.add_subplot(122, title="top1err")
+            # statistics
+            running_loss += loss.item() * now_batch_size
+            del loss
+            running_corrects += float(torch.sum(preds == labels.data))
 
+        epoch_loss = running_loss / dataset_sizes[phase]
+        epoch_acc = running_corrects / dataset_sizes[phase]
 
-def draw_curve(current_epoch):
-    x_epoch.append(current_epoch)
-    ax0.plot(x_epoch, y_loss['train'], 'bo-', label='train')
-    ax0.plot(x_epoch, y_loss['val'], 'ro-', label='val')
-    ax1.plot(x_epoch, y_err['train'], 'bo-', label='train')
-    ax1.plot(x_epoch, y_err['val'], 'ro-', label='val')
-    if current_epoch == 0:
-        ax0.legend()
-        ax1.legend()
-    fig.savefig(os.path.join('./model', 'ResNet50', 'train.jpg'))
+        print('{} Loss: {:.4f} Acc: {:.4f}'.format(phase, epoch_loss, epoch_acc))
+
+        y_loss[phase].append(epoch_loss)
+        y_err[phase].append(1.0 - epoch_acc)
+
+        # deep copy the model
+        if phase == 'val':
+            last_model_wts = model.state_dict()
+            # if epoch % 10 == 9:
+                # save_network(model, epoch)
+            draw_curve(epoch)
+
